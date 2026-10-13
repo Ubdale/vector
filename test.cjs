@@ -1,0 +1,35 @@
+const assert=require('node:assert/strict');const tracer=require('./public/vendor/imagetracer.js');
+const width=32,height=32,data=new Uint8ClampedArray(width*height*4);for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=(y*width+x)*4,v=x>=8&&x<24&&y>=8&&y<24?0:255;data.set([v,v,v,255],i);}const svg=tracer.imagedataToSVG({width,height,data},{numberofcolors:2,pathomit:0,viewbox:true,strokewidth:0});assert.match(svg,/<svg/);assert.match(svg,/<path/);assert.doesNotMatch(svg,/<image/);assert.match(svg,/viewBox="0 0 32 32"/);console.log('Passed: synthetic bitmap produces actual SVG paths with a scalable viewBox.');
+const exporter=require('./public/export.js');
+const fixture='<svg viewBox="0 0 100 80"><path fill="rgb(255,0,0)" opacity="0.5" d="M 0 0 Q 50 80 100 0 L 100 80 L 0 80 Z M 20 20 L 20 30 L 30 30 L 30 20 Z"/><path fill="rgb(0,0,0)" opacity="0" d="M 0 0 L 1 0 L 0 1 Z"/></svg>';
+const art=exporter.parse(fixture);assert.equal(art.paths.length,1);assert.equal(exporter.contours(art.paths[0].commands).length,2);
+const pdf=exporter.pdf(art);assert.match(pdf,/33\.3333 53\.3333 66\.6667 53\.3333 100 0 c/);assert.match(pdf,/\/ca 0.5/);assert.match(pdf,/\/MediaBox \[0 0 100 80\]/);assert.doesNotMatch(pdf,/\/Subtype \/Image/);
+const xref=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(xref,xref+4),'xref');for(const line of pdf.slice(xref).split('\n').filter(l=>/^\d{10} 00000 n/.test(l))){const offset=Number(line.slice(0,10));assert.match(pdf.slice(offset),/^\d+ 0 obj/);}
+const eps=exporter.eps(art);assert.match(eps,/%%BoundingBox: 0 0 100 80/);assert.match(eps,/1 0.5 0.5 setrgbcolor/);assert.match(eps,/curveto/);
+const dxf=exporter.dxf(art);assert.equal((dxf.match(/\nPOLYLINE\n/g)||[]).length,2);assert.match(dxf,/\nEOF\n$/);
+const rings=exporter.contours(art.paths[0].commands);for(let i=0;i<=1000;i++){const t=i/1000,x=100*t,y=160*t*(1-t);const distance=Math.min(...rings[0].map((a,j)=>{const b=rings[0][(j+1)%rings[0].length],dx=b[0]-a[0],dy=b[1]-a[1],u=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-a[0]-u*dx,y-a[1]-u*dy);}));assert.ok(distance<=.251);}
+require('node:fs').mkdirSync('tmp/exports',{recursive:true});for(const ext of ['pdf','eps','dxf'])require('node:fs').writeFileSync('tmp/exports/fixture.'+ext,exporter[ext](art));console.log('Passed: curve conversion, transparency, PDF offsets, holes, and DXF curve tolerance.');
+const quality=require('./public/quality.js');
+const tiny=new Uint8ClampedArray(40*40*4);for(let i=0;i<tiny.length;i+=4)tiny.set([245,245,245,255],i);tiny.set([220,20,40,255],(21*40+21)*4);
+const input={width:40,height:40,data:tiny},settings={preset:'logo',colors:8,smooth:0,detail:0,corners:true,denoise:false,background:false,threshold:160};
+const opts=quality.options(input,settings);assert.ok(opts.pal.some(p=>p.r===220&&p.g===20&&p.b===40));assert.deepEqual(quality.options(input,settings),opts);
+const detailed=tracer.imagedataToSVG(input,opts);assert.match(detailed,/fill="rgb\(220,20,40\)"/);const previous=tracer.imagedataToSVG(input,{numberofcolors:8,colorsampling:2,colorquantcycles:3,pathomit:8,strokewidth:0,viewbox:true});assert.doesNotMatch(previous,/fill="rgb\(220,20,40\)"/);
+const transparent=quality.prepare(input,{...settings,background:true});assert.equal(transparent.data[3],0);assert.equal(input.data[3],255);assert.ok(quality.palette(transparent,8).some(p=>p.a===0));
+console.log('Passed: tiny accent retained versus previous settings, deterministic palette, non-destructive background cleanup.');
+const hidden={width:4,height:2,data:new Uint8ClampedArray([255,255,255,0,255,255,255,0,20,120,70,255,20,120,70,255,255,255,255,0,255,255,255,0,20,120,70,255,20,120,70,255])};
+const hiddenPrepared=quality.prepare(hidden,settings);assert.deepEqual([...hiddenPrepared.data.slice(0,4)],[0,0,0,0]);const hiddenSvg=quality.trace(hidden,settings,tracer);assert.match(hiddenSvg,/opacity="0"/);assert.match(hiddenSvg,/viewBox="0 0 4 2"/);assert.deepEqual([...hidden.data.slice(0,4)],[255,255,255,0]);
+console.log('Passed: hidden RGB cannot turn transparent backgrounds opaque; original dimensions retained.');
+const pale=new Uint8ClampedArray(20*20*4);for(let i=0;i<pale.length;i+=4)pale.set([255,255,255,255],i);for(let y=5;y<15;y++)for(let x=5;x<15;x++)pale.set([229,238,248,255],(y*20+x)*4);
+const paleSVG=quality.trace({width:20,height:20,data:pale},settings,tracer);assert.match(paleSVG,/rgb\(229,238,248\)/);assert.match(paleSVG,/<path fill="rgb\(255,255,255\)" opacity="1" d="M 0 0 L 20 0 L 20 20 L 0 20 Z"/);
+assert.doesNotMatch(quality.trace(hidden,settings,tracer),/fill="rgb\([^)]*\)" opacity="1" d="M 0 0 L 4 0 L 4 2 L 0 2 Z"/);
+console.log('Passed: pale fills survive tracing; opacity backing applies only to fully opaque sources.');
+const mixedAlpha={width:3,height:1,data:new Uint8ClampedArray([255,255,255,0,200,40,80,128,200,40,80,255])},originalAlpha=[...mixedAlpha.data];
+const alphaPalette=[{r:0,g:0,b:0,a:0},{r:200,g:40,b:80,a:128},{r:200,g:40,b:80,a:255}];quality.quantizeAlpha(mixedAlpha,alphaPalette);assert.deepEqual([...mixedAlpha.data],[0,0,0,0,...originalAlpha.slice(4)]);
+assert.equal(quality.adaptiveBudget({width:1,height:1,data:new Uint8ClampedArray([1,2,3,255])},{preset:'illustration',autoColors:true,colors:8}),32);
+assert.equal(quality.adaptiveBudget(input,{preset:'illustration',autoColors:false,colors:8}),8);
+const preserved=quality.trace(input,settings,tracer);assert.match(preserved,/fill="rgb\(220,20,40\)"/);assert.match(preserved,/viewBox="0 0 40 40"/);
+console.log('Passed: transparent hidden color normalization, exact alpha palette matching, manual color override, and tiny region retention.');
+const exactOptions=quality.options(input,settings);assert.equal(exactOptions.pal.isFlatArtwork,undefined);assert.equal(typeof exactOptions.pal.flat,'function');
+assert.equal(quality.edgePalette(input,8).isFlatArtwork,undefined);
+const twoColors={width:1,height:1,data:new Uint8ClampedArray([1,2,3,255])};assert.deepEqual(quality.palette(twoColors,8),[{r:1,g:2,b:3,a:255}]);
+console.log('Passed: artwork classification does not collide with Array.flat; exact palettes are retained.');

@@ -1,0 +1,17 @@
+suite,image,error_before,error_after,black_error_before,black_error_after,paths_before,paths_after,bytes_before,bytes_after,ms_before,ms_after
+quality,compressed-logo,2.014,2.015,2.346,2.015,4,5,6510,6591,77,93
+quality,curved-logo,0.584,0.584,0.879,0.584,4,5,7636,7717,67,81
+quality,gradient,6.601,6.395,6.609,6.395,32,33,8462,11826,39,75
+quality,hidden-white-transparency,0.117,0.117,0.059,0.059,2,2,1002,1002,31,43
+quality,noisy-logo,3.603,3.601,3.88,3.601,4,5,8784,8865,71,65
+quality,small-accents,0.006,0.006,0.005,0.006,5,6,992,1073,22,30
+quality,small-text,1.165,1.165,1.738,1.165,52,53,19138,19219,23,25
+quality,thin-lines,0.557,0.556,0.814,0.556,4,5,8507,8588,48,56
+quality,transparency,0.277,0.277,0.37,0.37,3,3,1530,1530,32,40
+complex,city-poster,1.384,1.179,1.437,1.179,1225,1226,210396,287133,212,357
+complex,dense-technical-diagram,10.637,1.939,11.294,1.939,1367,2423,434398,792838,322,649
+complex,fine-mandala,4.982,4.641,5.546,4.641,332,639,336185,369192,230,591
+complex,overlapping-illustration,2.905,1.347,2.198,1.347,132,133,98919,222751,166,354
+complex,overlapping-translucent-shapes,7.355,7.137,6.443,6.229,146,146,46318,92726,322,279
+complex,photo-like-landscape,28.831,5.096,25.461,5.096,51734,12483,7992554,2859839,856,731
+complex,textured-artwork,11.509,10.901,11.801,10.901,2615,2616,670399,853861,403,447
