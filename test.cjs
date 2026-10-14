@@ -33,3 +33,11 @@ const exactOptions=quality.options(input,settings);assert.equal(exactOptions.pal
 assert.equal(quality.edgePalette(input,8).isFlatArtwork,undefined);
 const twoColors={width:1,height:1,data:new Uint8ClampedArray([1,2,3,255])};assert.deepEqual(quality.palette(twoColors,8),[{r:1,g:2,b:3,a:255}]);
 console.log('Passed: artwork classification does not collide with Array.flat; exact palettes are retained.');
+{const smooth=require('./public/smooth.js');
+const round=smooth.rounded([[0,0],[40,0],[40,40],[0,40]],1);const roundArt=exporter.parse(`<svg viewBox="0 0 40 40"><path fill="rgb(0,0,0)" opacity="1" d="${round}"/></svg>`);
+let previous=[0,0],lastTangent=null;for(const command of roundArt.paths[0].commands){const v=command.v;if(command.op==='M'){previous=v;continue;}if(command.op==='Z')continue;const incoming=[v[0]-previous[0],v[1]-previous[1]];if(lastTangent&&Math.hypot(...incoming)>0){const cross=incoming[0]*lastTangent[1]-incoming[1]*lastTangent[0];assert.ok(Math.abs(cross)<.0001,'rounded joins must be tangent-continuous');}lastTangent=command.op==='Q'?[v[2]-v[0],v[3]-v[1]]:incoming;previous=command.op==='Q'?v.slice(2):v;}
+const circle=Array.from({length:96},(_,i)=>[50+30*Math.cos(i*Math.PI/48),50+30*Math.sin(i*Math.PI/48)]);const circlePath=smooth.ellipse(circle);assert.ok(circlePath);assert.equal((circlePath.match(/Q /g)||[]).length,24);assert.equal(smooth.ellipse([[0,0],[20,0],[20,20],[0,20]]),null);
+assert.equal(smooth.smooth(fixture,{edgeStyle:'faithful'}),fixture);const tinyShape='<svg viewBox="0 0 10 10"><path fill="rgb(255,0,0)" opacity="1" d="M 2 2 L 3 2 L 3 3 L 2 3 Z"/></svg>';assert.equal(smooth.smooth(tinyShape,{edgeStyle:'smooth'}),tinyShape);
+console.log('Passed: tangent-continuous rounded joins, fitted ellipse curves, and preservation of tiny paths and faithful mode.');
+
+}
