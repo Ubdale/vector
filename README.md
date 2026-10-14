@@ -21,3 +21,5 @@ On Render, set ALLOWED_ORIGINS to the exact Vercel URL (and any approved custom 
 npm test verifies the retained browser comparison engine and vector export utilities. npm run build verifies the Next.js production build. Python API and tracing tests belong to the backend repository. Historical reports describe earlier engines and are retained for reference, not deployment guarantees. Photos, gradients, and tiny text remain approximate; smooth cleanup can remove texture.
 
 Samples: IMAGE-SOURCES.md and public/samples/ATTRIBUTION.md. The old ImageTracerJS library remains under the Unlicense for regression tests. No trained AI model is included.
+
+Configured hosted backend: https://vector-backend-ofrj.onrender.com. The frontend uses this URL by default. NEXT_PUBLIC_API_BASE_URL overrides it; remove any outdated Vercel value or set it to this hosted URL and redeploy. For local Python development, override with http://127.0.0.1:8000.
