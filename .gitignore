@@ -10,3 +10,13 @@ tmp/
 preview*.png
 Thumbs.db
 .DS_Store
+
+__pycache__/
+.venv/
+
+.next/
+out/
+vector-backend/
+backend/
+test-results/
+image-1.jpg

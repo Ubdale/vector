@@ -1,9 +1,19 @@
 {
-  "name": "outline-studio",
-  "version": "0.1.0",
+  "name": "outline-frontend",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "node server.cjs",
-    "test": "node test.cjs && node scripts/smooth-stress.cjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node test.cjs && node scripts/smooth-stress.cjs && node scripts/worker-api-test.cjs"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "dependencies": {
+    "next": "^16.4.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }

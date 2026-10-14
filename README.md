@@ -1,17 +1,23 @@
-# Outline Studio
+# Outline frontend
 
-A free local raster-to-vector prototype. Run `npm run dev` and open http://127.0.0.1:3000. Run `npm test` to verify basic real-path output.
+Next.js frontend for Vercel. The upload queue, tracing controls, vector editing, comparison, and SVG/PDF/EPS/DXF/PNG exports are preserved. The studio markup is rendered by Next.js; its existing JavaScript interaction and export modules initialize after hydration.
 
-Smooth curves is the default edge finish. It adds tangent-continuous rounded joins, optional ellipse fitting, protected thin contours, and bounded corner softness. Choose Faithful detail for angular artwork or exact lettering. Smooth finishing can alter pixel resemblance and increase SVG size; see SMOOTH-EDGE-REPORT.md for 34 image comparisons and the structural stress tests. The Curve demo illustrates the visible difference. All export formats use the finished paths.
+The Python tracer is maintained separately: https://github.com/Ubdale/vector-backend
 
-The latest test suite adds three real CC0/public-domain sample photographs and seven advanced generated images, for 26 cases overall. See ADVANCED-PERFORMANCE-REPORT.md and advanced-performance-chart.png. The engine protects small region coverage, preserves exact-color line art, assigns semi-transparent colors using composited appearance, and uses 32–64 adaptive colors. Use Illustration & photo for photographs; the Real photo example selects it automatically. Photos remain approximations and may produce large SVGs. Smooth mode allows simplifying exact-color line-art boundaries. Sample attribution is documented in IMAGE-SOURCES.md and public/samples/ATTRIBUTION.md.
+## Local development
 
-Quality improvements include coverage-based edge recovery for detected flat logos, 2× internal sampling for suitable inputs up to 1000 pixels, exact-color preservation for tiny accents, transparent-pixel normalization, and optional adaptive illustration colors (minimum 32). Turn off edge recovery when preserving original color bands is more important than clean geometry. Gradients are still represented as solid-color shapes. Built-in samples exercise text, lines, transparency, and gradients. See QUALITY-REPORT.md for reproducible before/after measurements on nine generated fixtures.
+1. Start the Python backend on port 8000 (see its README).
+2. Copy .env.example to .env.local and set NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000.
+3. Run npm ci, then npm run dev. Open http://localhost:3000.
 
-Features: PNG/JPEG/WebP import, drag and drop, a generated sample logo, worker-based tracing, color and smoothing controls, monochrome mode, near-white background removal, comparison views, zoom, and SVG download. Images never leave the browser. High-detail tracing supports up to 2000 pixels on the longest side, with a 1000-pixel standard option. A queue holds up to 20 images and processes them sequentially. Detail cleanup, sharp-corner preservation, light denoising, and sketch threshold controls are available. Inline shape editing supports selection, palette recoloring, deletion, undo/redo, and restoration; edits are included in every export. Weighted color clustering is deterministic, preserves transparent palette entries, and reduces anti-alias color bands for mostly flat artwork. Maximum file size is 20 MB.
+## Vercel
 
-Exports: SVG and PDF preserve vector paths and transparency; EPS preserves vector curves with partially transparent colors blended against white; DXF contains closed outline polylines with 0.25 traced-pixel curve tolerance (no fills, pixel units, potentially overlapping contours); PNG rasterizes the vector at 1×, 2×, or 4×. Open SVG/PDF/EPS in Illustrator and save as .ai for a native Illustrator document. No renamed PDF masquerading as .ai is produced.
+Import Ubdale/vector, framework Next.js, repository root directory. Set NEXT_PUBLIC_API_BASE_URL to the deployed Render service URL, without /api/trace (for example https://your-service.onrender.com). Build command: npm run build. Install command: npm ci. Redeploy after changing this public build-time variable.
 
-Uses vendored ImageTracerJS 1.2.6 under the Unlicense (see public/vendor/LICENSE). Google Fonts is optional; system fonts are used offline. No trained AI model, paid API, account system, or hosted deployment is included. SVG accuracy is not benchmarked against commercial services. Transparency and small details require visual inspection. Custom AI training is future work.
+On Render, set ALLOWED_ORIGINS to the exact Vercel URL (and any approved custom domains), comma separated. Origins have no path or trailing slash. Requests go directly from the browser worker to Render, including the image pixels; no Vercel API proxy or image storage is used. The Python server processes images in memory.
 
-Latest complex-image fixes protect pale fills and exact-color patterns, reduce detected dense noise before quantization, use tighter curve fitting for adaptive illustrations, and preserve opaque coverage through a vector backing region. PERFORMANCE-REPORT.md and performance-chart.png compare the immediately previous engine with these fixes on 16 generated images. Times are median conversion times from three Node runs, not browser end-to-end latency. No commercial-service benchmark is included; the latest advanced suite includes three real photographs.
+## Checks
+
+npm test verifies the retained browser comparison engine and vector export utilities. npm run build verifies the Next.js production build. Python API and tracing tests belong to the backend repository. Historical reports describe earlier engines and are retained for reference, not deployment guarantees. Photos, gradients, and tiny text remain approximate; smooth cleanup can remove texture.
+
+Samples: IMAGE-SOURCES.md and public/samples/ATTRIBUTION.md. The old ImageTracerJS library remains under the Unlicense for regression tests. No trained AI model is included.
