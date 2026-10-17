@@ -41,3 +41,13 @@ assert.equal(smooth.smooth(fixture,{edgeStyle:'faithful'}),fixture);const tinySh
 console.log('Passed: tangent-continuous rounded joins, fitted ellipse curves, and preservation of tiny paths and faithful mode.');
 
 }
+{
+ const cubicArt=exporter.parse('<svg viewBox="0 0 100 100"><path fill="rgb(30,60,90)" opacity="1" d="M 0 50 C 0 150 100 -50 100 50 L 100 100 L 0 100 Z"/></svg>');
+ assert.match(exporter.pdf(cubicArt),/0 150 100 -50 100 50 c/);
+ assert.match(exporter.eps(cubicArt),/0 150 100 -50 100 50 curveto/);
+ const ring=exporter.contours(cubicArt.paths[0].commands)[0];
+ const segmentDistance=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
+ for(let i=0;i<=1000;i++){const t=i/1000,u=1-t,p=[100*(3*u*t*t+t*t*t),50*u*u*u+450*u*u*t-150*u*t*t+50*t*t*t];const error=Math.min(...ring.map((a,j)=>segmentDistance(p,a,ring[(j+1)%ring.length])));assert.ok(error<=.251,'cubic inflection must stay within DXF tolerance');}
+ assert.throws(()=>exporter.parse('<svg viewBox="0 0 10 10"><path fill="rgb(0,0,0)" d="M 0 0 A 5 5 0 0 0 9 9 Z"/></svg>'),/Unsupported curve/);
+ console.log('Passed: cubic curves remain editable in PDF/EPS; inflection outlines meet DXF tolerance.');
+}

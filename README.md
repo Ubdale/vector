@@ -23,3 +23,5 @@ npm test verifies the retained browser comparison engine and vector export utili
 Samples: IMAGE-SOURCES.md and public/samples/ATTRIBUTION.md. The old ImageTracerJS library remains under the Unlicense for regression tests. No trained AI model is included.
 
 Configured hosted backend: https://vector-backend-ofrj.onrender.com. The frontend uses this URL by default. NEXT_PUBLIC_API_BASE_URL overrides it; remove any outdated Vercel value or set it to this hosted URL and redeploy. For local Python development, override with http://127.0.0.1:8000.
+
+The studio now uses Lucide React icons and Sonner notifications, with keyboard shortcuts, paste/drop upload, actual elapsed tracing feedback, cancellation, and an explicit settings-pending state. Cubic Bézier SVG paths are preserved in PDF/EPS exports and flattened adaptively for DXF. See TRACING-UPGRADE-REPORT.md for hybrid-engine measurements and MODEL-ROADMAP.md for model-training prerequisites and limitations.
