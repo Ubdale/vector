@@ -4,7 +4,7 @@ The production pipeline uses classical tracing. Coding agents implement and test
 
 ## Current work
 
-Python handles the API, image preparation, transparency and feature-preserving fallback. The MIT-licensed VTracer Rust engine fits opaque complex artwork with cubic Bézier paths. SVG, PDF and EPS preserve those curves; DXF approximates them with bounded-error outlines. This can reduce contour noise and path count. It does not reconstruct native gradients or guarantee accurate lettering or photographs.
+Python handles the API, image preparation, transparency and feature-preserving fallback. The MIT-licensed VTracer Rust engine fits opaque complex artwork with cubic Bézier paths. SVG, PDF and EPS preserve those curves; DXF approximates them with bounded-error outlines. This can reduce contour noise and path count. A conservative deterministic fitter now supports two-stop linear gradients on coherent visible regions and exact full-frame ramps. It does not reconstruct arbitrary gradients or guarantee accurate lettering or photographs.
 
 The original open-source tracer must not be confused with the separately activated VTracer 2 desktop product. Its advertised neural cleanup and gradient output are not features we can claim for the Python package. No public model weights or Linux SaaS integration rights were established for that product during this review.
 
@@ -27,4 +27,4 @@ StarVector publishes Apache-2.0 model weights, but its model card does not suppo
 - [DiffVG differentiable rasterizer](https://github.com/BachiLi/diffvg)
 - [LIVE per-image vector optimization](https://github.com/Picsart-AI-Research/LIVE-Layerwise-Image-Vectorization)
 
-Smooth contours alone do not establish commercial readiness. Native gradients, text reconstruction, error recovery, rate limits and capacity still need validation before selling high-fidelity tracing as a guarantee.
+Smooth contours alone do not establish commercial readiness. Broader gradient reconstruction, text recovery, error recovery, rate limits and capacity still need validation before selling high-fidelity tracing as a guarantee.

@@ -4,20 +4,48 @@
   function parse(svg){
     const box=svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
     if(!box)throw Error('Missing artwork dimensions');
-    const paths=[];
+    const paths=[],gradients=new Map();
+    const attribute=(tag,key)=>tag.match(new RegExp('(?:^|\\s)'+key+'="([^"]*)"'))?.[1];
+    const rgbColor=value=>{const match=value?.match(/^rgb\((\d+),(\d+),(\d+)\)$/);if(!match||match.slice(1).some(v=>+v>255))throw Error('Unsupported tracing color');return match.slice(1).map(Number);};
+    for(const match of svg.matchAll(/<linearGradient\b([^>]*)>([\s\S]*?)<\/linearGradient>/g)){
+      const id=attribute(match[1],'id'),coords=['x1','y1','x2','y2'].map(key=>Number(attribute(match[1],key)));
+      const stops=[...match[2].matchAll(/<stop\b[^>]*>/g)].map(stop=>({offset:Number(attribute(stop[0],'offset')),color:rgbColor(attribute(stop[0],'stop-color'))}));
+      if(!id||attribute(match[1],'gradientUnits')!=='userSpaceOnUse'||coords.some(v=>!Number.isFinite(v))||Math.hypot(coords[2]-coords[0],coords[3]-coords[1])<1e-6||stops.length!==2||stops[0].offset!==0||stops[1].offset!==1)throw Error('Unsupported tracing gradient');
+      gradients.set(id,{coords,colors:stops.map(stop=>stop.color)});
+    }
     for(const tag of svg.matchAll(/<path\b[^>]*>/g)){
-      const d=tag[0].match(/\bd="([^"]*)"/),rgb=tag[0].match(/fill="rgb\((\d+),(\d+),(\d+)\)"/),a=tag[0].match(/opacity="([\d.]+)"/);
-      if(!d||!rgb)throw Error('Unsupported tracing output');
+      const d=tag[0].match(/\bd="([^"]*)"/),fill=attribute(tag[0],'fill'),a=tag[0].match(/(?:^|\s)opacity="([\d.]+)"/),reference=fill?.match(/^url\(#([\w-]+)\)$/),gradient=reference?gradients.get(reference[1]):null;
+      if(!d||(reference&&!gradient))throw Error('Unsupported tracing output');
+      const color=rgbColor(gradient?attribute(tag[0],'data-fallback-fill'):fill);
       const opacity=a?Number(a[1]):1;if(opacity===0)continue;
       const tokens=d[1].match(/-?\d*\.?\d+(?:e[-+]?\d+)?|[a-z]/gi)||[];const commands=[];
       for(let i=0;i<tokens.length;){const op=tokens[i++],count={M:2,L:2,Q:4,C:6,Z:0}[op];if(count===undefined)throw Error('Unsupported curve');const values=tokens.slice(i,i+count).map(Number);if(values.length!==count||values.some(v=>!Number.isFinite(v)))throw Error('Invalid path');i+=count;commands.push({op,v:values});}
-      paths.push({commands,color:rgb.slice(1).map(Number),opacity});
+      paths.push({commands,color,opacity,...(gradient?{gradient}: {})});
     }
     return{width:Number(box[1]),height:Number(box[2]),paths};
   }
   function curves(commands,format){let x=0,y=0,start=[0,0];return commands.map(({op,v})=>{if(op==='M'){[x,y]=v;start=v;return `${v.map(n).join(' ')} ${format==='pdf'?'m':'moveto'}`;}if(op==='L'){[x,y]=v;return `${v.map(n).join(' ')} ${format==='pdf'?'l':'lineto'}`;}if(op==='C'){[x,y]=v.slice(4);return `${v.map(n).join(' ')} ${format==='pdf'?'c':'curveto'}`;}if(op==='Q'){const [cx,cy,ex,ey]=v,values=[x+2/3*(cx-x),y+2/3*(cy-y),ex+2/3*(cx-ex),ey+2/3*(cy-ey),ex,ey];x=ex;y=ey;return `${values.map(n).join(' ')} ${format==='pdf'?'c':'curveto'}`;}[x,y]=start;return format==='pdf'?'h':'closepath';}).join('\n');}
-  function pdf(art){const alphas=[...new Set(art.paths.map(p=>p.opacity))];const content=`q\n1 0 0 -1 0 ${n(art.height)} cm\n`+art.paths.map(p=>`/A${alphas.indexOf(p.opacity)} gs\n${p.color.map(c=>n(c/255)).join(' ')} rg\n${curves(p.commands,'pdf')}\nf\n`).join('')+'Q\n';const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>',`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${n(art.width)} ${n(art.height)}] /Resources << /ExtGState << ${alphas.map((a,i)=>`/A${i} ${i+5} 0 R`).join(' ')} >> >> /Contents 4 0 R >>`,`<< /Length ${content.length} >>\nstream\n${content}endstream`,...alphas.map(a=>`<< /Type /ExtGState /ca ${n(a)} /CA ${n(a)} >>`)];let output='%PDF-1.4\n',offsets=[0];objects.forEach((obj,i)=>{offsets.push(output.length);output+=`${i+1} 0 obj\n${obj}\nendobj\n`;});const xref=output.length;output+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.slice(1).map(o=>`${String(o).padStart(10,'0')} 00000 n \n`).join('')+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;return output;}
-  function eps(art){return `%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 ${Math.ceil(art.width)} ${Math.ceil(art.height)}\n%%HiResBoundingBox: 0 0 ${n(art.width)} ${n(art.height)}\n%%Creator: Outline Studio\n%%EndComments\ngsave\n0 ${n(art.height)} translate\n1 -1 scale\n`+art.paths.map(p=>`${p.color.map(c=>n((c*p.opacity+255*(1-p.opacity))/255)).join(' ')} setrgbcolor\nnewpath\n${curves(p.commands,'eps')}\nfill\n`).join('')+'grestore\nshowpage\n%%EOF\n';}
+  function shading(gradient,opacity=1){
+    const colors=gradient.colors.map(color=>color.map(c=>n((c*opacity+255*(1-opacity))/255)).join(' '));
+    return `<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [${gradient.coords.map(n).join(' ')}] /Function << /FunctionType 2 /Domain [0 1] /C0 [${colors[0]}] /C1 [${colors[1]}] /N 1 >> /Extend [true true] >>`;
+  }
+  function pdf(art){
+    const alphas=[...new Set(art.paths.map(p=>p.opacity))],gradients=art.paths.filter(p=>p.gradient).map(p=>p.gradient);
+    let gradientIndex=0;
+    const content=`q\n1 0 0 -1 0 ${n(art.height)} cm\n`+art.paths.map(p=>{
+      const geometry=curves(p.commands,'pdf'),paint=p.gradient?`${geometry}\nW n\n/G${gradientIndex++} sh`:`${p.color.map(c=>n(c/255)).join(' ')} rg\n${geometry}\nf`;
+      return `q\n/A${alphas.indexOf(p.opacity)} gs\n${paint}\nQ\n`;
+    }).join('')+'Q\n';
+    const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>',`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${n(art.width)} ${n(art.height)}] /Resources << /ExtGState << ${alphas.map((a,i)=>`/A${i} ${i+5} 0 R`).join(' ')} >> /Shading << ${gradients.map((g,i)=>`/G${i} ${i+5+alphas.length} 0 R`).join(' ')} >> >> /Contents 4 0 R >>`,`<< /Length ${content.length} >>\nstream\n${content}endstream`,...alphas.map(a=>`<< /Type /ExtGState /ca ${n(a)} /CA ${n(a)} >>`),...gradients.map(g=>shading(g))];
+    let output='%PDF-1.4\n',offsets=[0];objects.forEach((obj,i)=>{offsets.push(output.length);output+=`${i+1} 0 obj\n${obj}\nendobj\n`;});const xref=output.length;
+    return output+`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.slice(1).map(o=>`${String(o).padStart(10,'0')} 00000 n \n`).join('')+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  }
+  function eps(art){
+    return `%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 ${Math.ceil(art.width)} ${Math.ceil(art.height)}\n%%HiResBoundingBox: 0 0 ${n(art.width)} ${n(art.height)}\n%%LanguageLevel: 3\n%%Creator: Outline Studio\n%%EndComments\ngsave\n0 ${n(art.height)} translate\n1 -1 scale\n`+art.paths.map(p=>{
+      const geometry=curves(p.commands,'eps');
+      return p.gradient?`gsave\nnewpath\n${geometry}\nclip newpath\n${shading(p.gradient,p.opacity)} shfill\ngrestore\n`:`${p.color.map(c=>n((c*p.opacity+255*(1-p.opacity))/255)).join(' ')} setrgbcolor\nnewpath\n${geometry}\nfill\n`;
+    }).join('')+'grestore\nshowpage\n%%EOF\n';
+  }
   // Adaptive subdivision; control hull bounds keep cubics within 0.25 px.
   function contours(commands){const rings=[];let ring=[],x=0,y=0;const append=(a,b)=>ring.push([a,b]);function quad(a,b,c,d,e,f,depth=0){const error=Math.hypot(a-2*c+e,b-2*d+f)/4;if(error<=.25||depth>=12){append(e,f);return;}const ac=(a+c)/2,bd=(b+d)/2,ce=(c+e)/2,df=(d+f)/2,mx=(ac+ce)/2,my=(bd+df)/2;quad(a,b,ac,bd,mx,my,depth+1);quad(mx,my,ce,df,e,f,depth+1);}
     function cubic(a,b,c,d,depth=0){const pointDistance=p=>{const vx=d[0]-a[0],vy=d[1]-a[1],length=vx*vx+vy*vy,t=length?Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/length)):0;return Math.hypot(p[0]-a[0]-t*vx,p[1]-a[1]-t*vy);};if(Math.max(pointDistance(b),pointDistance(c))<=.25||depth>=18){append(...d);return;}const mid=(u,v)=>[(u[0]+v[0])/2,(u[1]+v[1])/2],ab=mid(a,b),bc=mid(b,c),cd=mid(c,d),abc=mid(ab,bc),bcd=mid(bc,cd),center=mid(abc,bcd);cubic(a,ab,abc,center,depth+1);cubic(center,bcd,cd,d,depth+1);}

@@ -1,5 +1,7 @@
 # Hybrid tracing upgrade — 2026-10-17
 
+This records the earlier hybrid-engine pass. See WORKSHOP-UPGRADE-REPORT.md for the subsequent redesign and conservative gradient support.
+
 Same four images as the production complex-image test. New timing is local CPU median of three runs; it is not directly comparable with the historical Render end-to-end timings. Sizes below compare actual SVG bytes for the two outputs. Image error is mean RGB error /255 on white, not accuracy percentage.
 
 | Image | Previous paths | New paths | Previous KB | New KB | New local CPU s | Previous error | New error |
