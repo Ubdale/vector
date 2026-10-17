@@ -16,3 +16,16 @@ Observed: dragon silhouette is much smoother and the file is much smaller, but s
 New cubic paths parsed successfully and exported as vector PDF/EPS; DXF follows a tested 0.25-pixel flattening tolerance. Native gradients remain unimplemented. Source image rights are unchanged.
 
 See MODEL-ROADMAP.md for the distinction between coding agents, learned models, and per-image optimization.
+
+## Hosted verification
+
+After deployment with Python 3.12.10 on 2026-10-17, all four direct API tests returned HTTP 200 and the correct Vercel CORS origin. These are single end-to-end requests from the test machine to Render, not CPU-only timings or statistical latency guarantees.
+
+| Image | Route | Hosted seconds | Paths | SVG KB |
+|---|---|---:|---:|---:|
+| Dragon | Rust splines | 2.33 | 206 | 102.2 |
+| Mandala | OpenCV precision | 17.42 | 430 | 1913.5 |
+| Dense diagram | OpenCV precision | 20.34 | 11205 | 1457.4 |
+| Photo | Rust splines | 4.64 | 1519 | 780.3 |
+
+The actual production frontend dragon trace also completed in 2.9 seconds and downloaded a 98,377-byte vector PDF. An initial native deployment running Render's default Python 3.14 crashed with exit 139; the runtime is now pinned to the tested 3.12 series. Five additional consecutive hosted dragon traces passed after the change. This establishes a successful smoke test, not proof of the original crash's root cause or a long-term reliability guarantee.
