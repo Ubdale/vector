@@ -33,3 +33,23 @@ Windows cumulative peak process working set was about 77 MB across these fixture
 The frontend reports whether the effective route preserved diagram details, used smooth artwork tracing, or recognized a pure gradient. Gradients can be disabled in advanced settings. Recoloring a selected gradient explicitly replaces it with a solid fill; undo restores the original paint.
 
 Hosted measurements are recorded after deployment below; local timings alone do not establish production reliability or commercial readiness.
+
+## Hosted verification
+
+Render deployed backend commit 094448f and reports `gradient_mode: conservative-linear-v1`. The compatible workshop frontend was deployed first. All seven sequential direct API requests returned HTTP 200 with the expected production CORS origin:
+
+| Image | End-to-end seconds | Effective route |
+|---|---:|---|
+| Dragon | 4.77 | Rust splines |
+| Mandala | 16.33 | OpenCV precision |
+| Dense diagram | 17.21 | OpenCV precision |
+| Photo | 13.43 | Rust splines with four gradients |
+| Pure linear gradient | 0.67 | One analytic gradient path |
+| Transparency probe | 1.51 | OpenCV alpha preservation |
+| Thin-detail probe | 2.73 | OpenCV precision |
+
+These are single measurements from the test machine to the free Render instance, including transport. The added color-fitting stage increases processing cost for shaded artwork; this pass improves fidelity rather than claiming a general speedup. Rendered hosted dragon and photo output reproduce the local errors of 6.992 and 9.398.
+
+The actual production frontend gradient trace completed in 1.0 second and downloaded vector PDF and PNG. One initial browser transport request failed and succeeded on retry; no new instance failure appeared in Render Events. The worker now retries a transport failure once, never retries an HTTP error automatically, and reports an actionable message if the retry fails. Regression tests cover recovery, bounded retry count, busy responses and incomplete vectors. This does not eliminate cold starts or establish a long-term availability guarantee.
+
+The final UI also removes an obsolete disabled edge-recovery control, labels minimum cleanup honestly, and keeps solid recoloring from introducing a stroke that would differ between SVG and PDF.
