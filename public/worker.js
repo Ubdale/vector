@@ -14,7 +14,7 @@ for(let attempt=0;attempt<2;attempt++){
   }
 }
 if(!response.ok){
-  const messages={400:'The image or settings were not accepted. Reload the image and try again.',413:'This image is too large for tracing. Choose standard resolution.',422:'These tracing settings are invalid. Reload the page and try again.',404:'Tracing API not found. Check the configured backend URL.',502:'The tracing server is restarting or waking up. Your image is kept; try again shortly.',503:'The tracing server is busy. Your image is kept; try again shortly.',504:'The tracing server took too long. Try standard resolution or fewer colors.'};
+  const messages={400:'The image or settings were not accepted. Reload the image and try again.',408:'Image upload took too long. Your image is kept; try again.',413:'This image is too large for tracing. Choose standard resolution.',422:'These tracing settings are invalid. Reload the page and try again.',404:'Tracing API not found. Check the configured backend URL.',502:'The tracing server is restarting or waking up. Your image is kept; try again shortly.',503:'The tracing server is busy. Your image is kept; try again shortly.',504:'The tracing server took too long. Try standard resolution or fewer colors.'};
   throw Error(messages[response.status]||'Tracing failed on the server. Your image is kept; try again.');
 }
 const result=await response.json();

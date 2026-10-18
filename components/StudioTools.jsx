@@ -36,7 +36,7 @@ export default function StudioTools() {
     {help && <dialog id="shortcut-dialog" className="shortcut-dialog" aria-labelledby="shortcut-heading" onClick={e=>{if(e.target===e.currentTarget)e.currentTarget.close();}}>
       <div className="shortcut-heading"><h2 id="shortcut-heading">A few useful shortcuts</h2><button autoFocus aria-label="Close shortcuts" onClick={()=>document.getElementById('shortcut-dialog').close()}><X size={18}/></button></div>
       <p>Keep your focus on the artwork.</p>
-      <dl>{[['Upload an image','⌘ / Ctrl O'],['Paste an image','⌘ / Ctrl V'],['Run trace','⌘ / Ctrl Enter'],['Undo an edit','⌘ / Ctrl Z'],['Redo an edit','⌘ / Ctrl Shift Z'],['Compare / Original / Vector','1 / 2 / 3'],['Stop tracing','Esc']].map(([action,key])=><div key={action}><dt>{action}</dt><dd><kbd>{key}</kbd></dd></div>)}</dl>
+      <dl>{[['Upload an image','⌘ / Ctrl O'],['Paste an image','⌘ / Ctrl V'],['Run trace','⌘ / Ctrl Enter'],['Undo an edit','⌘ / Ctrl Z'],['Redo an edit','⌘ / Ctrl Shift Z'],['Compare / Original / Vector / Slide','1 / 2 / 3 / 4'],['Stop tracing','Esc']].map(([action,key])=><div key={action}><dt>{action}</dt><dd><kbd>{key}</kbd></dd></div>)}</dl>
       <small>View shortcuts work when you aren’t typing or changing a setting.</small>
     </dialog>}
   </>;

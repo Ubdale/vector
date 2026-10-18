@@ -1,5 +1,7 @@
 # Outline frontend
 
+Current redesign and honest complex-image findings: see COLOR-STUDIO-REPORT.md. The app-first cobalt studio includes a real comparison slider, responsive settings and a separate creative curve experiment.
+
 Next.js frontend for Vercel. The upload queue, tracing controls, vector editing, comparison, and SVG/PDF/EPS/DXF/PNG exports are preserved. The studio markup is rendered by Next.js; its existing JavaScript interaction and export modules initialize after hydration.
 
 The Python tracer is maintained separately: https://github.com/Ubdale/vector-backend
