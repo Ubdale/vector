@@ -36,3 +36,23 @@ The backend now reads uploads with a 30-second limit and runs each conversion in
 - Desktop and 390-pixel mobile layout checks pass with no horizontal page overflow.
 - Slide alignment, split control, 400% zoom switching, collapsed mobile settings and the new complex sample were exercised in the browser.
 - Hosted measurements after the reliability deployment are recorded below. The initial timeout is retained here rather than counted as a successful test.
+
+## Hosted results after the fix
+
+All nine sequential requests returned HTTP 200 with the expected production CORS origin and zero embedded raster images. Times include upload, disposable-process startup, tracing and response transport on the existing free Render instance; they are single observations, not latency guarantees.
+
+| Image | Seconds | Paths | Gradients |
+|---|---:|---:|---:|
+| Dragon | 9.12 | 206 | 0 |
+| Mandala | 22.30 | 430 | 0 |
+| Dense diagram | 20.23 | 11205 | 0 |
+| Photograph | 17.74 | 1519 | 4 |
+| Pure gradient | 2.46 | 1 | 1 |
+| Transparency | 3.45 | 2 | 0 |
+| Thin details | 5.10 | 1344 | 0 |
+| Botanical | 5.81 | 58 | 1 |
+| Interwoven | 31.84 | 22710 | 0 |
+
+Successful conversion is not equivalent to visual accuracy. In particular, the interwoven output remains jagged at 400% despite completing successfully and containing only vector paths. The first failed hosted attempt is excluded from the successful-run timings above. Raw responses, timings and a simple performance chart are retained under `test-results/hosted-color-studio/`.
+
+The actual deployed frontend also traced the botanical example in 7.3 seconds, aligned the Slide overlay, switched correctly out of Slide at 400% zoom, and downloaded its vector PDF. Browser error logs were empty. This pass changes the UI and execution reliability, not the tracing geometry: the rejected smoothing experiments were removed.
