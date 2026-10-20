@@ -28,3 +28,7 @@ StarVector publishes Apache-2.0 model weights, but its model card does not suppo
 - [LIVE per-image vector optimization](https://github.com/Picsart-AI-Research/LIVE-Layerwise-Image-Vectorization)
 
 Smooth contours alone do not establish commercial readiness. Broader gradient reconstruction, text recovery, error recovery, rate limits and capacity still need validation before selling high-fidelity tracing as a guarantee.
+
+## October 21 source-checked refinement
+
+An optional checksum-pinned Inkvec 0.2.6 Rust CLI now supplies a second deterministic candidate for moderate-size opaque illustrations. It reconstructs antialias coverage and fits actual linear/elliptical radial fills; a source-color and small-dark-feature gate decides whether to retain it. No neural restore/SR feature is enabled, and no model was trained. See ACCURACY-REFINEMENT-REPORT.md for measured gains, preserved fallback classes, and outstanding fidelity limits. VTracer 1.0 watershed experiments were not adopted globally because fine diagram/mandala details regressed.

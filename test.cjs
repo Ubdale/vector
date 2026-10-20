@@ -9,6 +9,35 @@ assert.throws(()=>exporter.parse(gradientFixture.replace('url(#g0)','url(#missin
 const gradientXref=Number(gradientPDF.match(/startxref\n(\d+)/)[1]);assert.equal(gradientPDF.slice(gradientXref,gradientXref+4),'xref');for(const line of gradientPDF.slice(gradientXref).split('\n').filter(l=>/^\d{10} 00000 n/.test(l))){assert.match(gradientPDF.slice(Number(line.slice(0,10))),/^\d+ 0 obj/);}
 require('node:fs').mkdirSync('tmp/exports',{recursive:true});require('node:fs').writeFileSync('tmp/exports/gradient.pdf',gradientPDF);require('node:fs').writeFileSync('tmp/exports/gradient.eps',gradientEPS);
 console.log('Passed: editable gradient shadings, clipping holes, paint isolation, and PDF offsets.');
+const radialFixture=gradientFixture.replace(/linearGradient/g,'radialGradient').replace('x1="0" y1="0" x2="100" y2="0"','cx="50" cy="40" r="45"');
+const radialArt=exporter.parse(radialFixture),radialPDF=exporter.pdf(radialArt);
+assert.deepEqual(radialArt.paths[0].gradient.coords,[50,40,0,50,40,45]);
+assert.match(radialPDF,/\/ShadingType 3/);assert.match(radialPDF,/\/Coords \[50 40 0 50 40 45\]/);
+assert.match(exporter.eps(radialArt),/\/ShadingType 3/);assert.doesNotMatch(radialPDF,/\/Subtype \/Image/);
+assert.throws(()=>exporter.parse(radialFixture.replace('r="45"','r="0"')),/Unsupported tracing gradient/);
+assert.throws(()=>exporter.parse(radialFixture.replace('r="45"','r="45" fx="10"')),/Unsupported tracing gradient/);
+require('node:fs').writeFileSync('tmp/exports/radial.pdf',radialPDF);
+const multiFixture=gradientFixture.replace('<stop offset="1"','<stop offset="0.4" stop-color="rgb(0,255,0)"/><stop offset="1"');
+const multiArt=exporter.parse(multiFixture),multiPDF=exporter.pdf(multiArt);
+assert.deepEqual(multiArt.paths[0].gradient.offsets,[0,.4,1]);assert.match(multiPDF,/\/FunctionType 3/);assert.match(multiPDF,/\/Bounds \[0.4\]/);
+assert.match(exporter.eps(multiArt),/\/FunctionType 3/);
+assert.throws(()=>exporter.parse(multiFixture.replace('offset="0.4"','offset="0"')),/Unsupported tracing gradient/);
+require('node:fs').writeFileSync('tmp/exports/multi.pdf',multiPDF);
+const ellipseFixture=radialFixture.replace('r="45"','r="45" gradientTransform="matrix(1 0 0 0.5 0 20)"');
+const ellipseArt=exporter.parse(ellipseFixture),ellipsePDF=exporter.pdf(ellipseArt);
+assert.match(ellipsePDF,/W n\n1 0 0 0.5 0 20 cm\n\/G0 sh/);
+assert.match(exporter.eps(ellipseArt),/\[1 0 0 0.5 0 20\] concat/);
+assert.throws(()=>exporter.parse(ellipseFixture.replace('matrix(1 0 0 0.5 0 20)','matrix(1 0 0 0 0 0)')),/Unsupported tracing gradient transform/);
+require('node:fs').writeFileSync('tmp/exports/ellipse.pdf',ellipsePDF);
+const evenoddArt=exporter.parse(gradientFixture.replace('data-fallback-fill=','fill-rule="evenodd" data-fallback-fill='));
+assert.match(exporter.pdf(evenoddArt),/W\* n/);assert.match(exporter.eps(evenoddArt),/eoclip/);
+const evenoddSolid=exporter.parse('<svg viewBox="0 0 50 50"><path fill-rule="evenodd" fill="rgb(255,0,0)" d="M 0 0 L 50 0 L 50 50 L 0 50 Z M 10 10 L 40 10 L 40 40 L 10 40 Z"/></svg>');
+assert.match(exporter.pdf(evenoddSolid),/f\*/);assert.match(exporter.eps(evenoddSolid),/eofill/);
+require('node:fs').writeFileSync('tmp/exports/evenodd.pdf',exporter.pdf(evenoddSolid));
+
+
+
+
 const fixture='<svg viewBox="0 0 100 80"><path fill="rgb(255,0,0)" opacity="0.5" d="M 0 0 Q 50 80 100 0 L 100 80 L 0 80 Z M 20 20 L 20 30 L 30 30 L 30 20 Z"/><path fill="rgb(0,0,0)" opacity="0" d="M 0 0 L 1 0 L 0 1 Z"/></svg>';
 const art=exporter.parse(fixture);assert.equal(art.paths.length,1);assert.equal(exporter.contours(art.paths[0].commands).length,2);
 const pdf=exporter.pdf(art);assert.match(pdf,/33\.3333 53\.3333 66\.6667 53\.3333 100 0 c/);assert.match(pdf,/\/ca 0.5/);assert.match(pdf,/\/MediaBox \[0 0 100 80\]/);assert.doesNotMatch(pdf,/\/Subtype \/Image/);
