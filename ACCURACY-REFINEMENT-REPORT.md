@@ -2,7 +2,7 @@
 
 The Python API now optionally uses the checksum-pinned Apache-2.0 Inkvec 0.2.6 Rust CLI for moderate-size opaque illustrations. It reconstructs coverage boundaries and real linear/elliptical radial gradients. No neural restorer, super-resolution weights, GPU service, paid API or newly trained model is used.
 
-The original route is retained unless the candidate improves sampled RGB error by at least 15% and 0.5/255 and preserves small dark marks. Refinement currently requires automatic illustration settings, default fit controls, dimensions 256–768 pixels on each side, at least 15% coverage by the 16 most frequent source colors, and at most 750 initial paths. Dense line art, transparency, manual palettes and larger/tiny inputs keep their existing routes. This gate is a heuristic validated on these fixtures, not a universal quality guarantee.
+The original route is retained unless the candidate improves sampled RGB error by at least 15% and 0.5/255 and preserves small dark marks. Refinement currently requires automatic logo/illustration settings, default fit controls, dimensions 256–768 pixels on each side, at least 15% coverage by the 16 most frequent source colors, and at most 750 initial illustration paths (5000 in the logo preset, which otherwise traces JPEG noise into many small regions). Dense line art, transparency, manual palettes and larger/tiny inputs keep their existing routes. This gate is a heuristic validated on these fixtures, not a universal quality guarantee.
 
 ## Actual application output
 
@@ -48,3 +48,23 @@ The Render build installs the pinned CLI archive and verifies its SHA256 before 
 The compressed dragon still has grungy regions; photographs remain stylized. Arbitrary mesh/blur gradients and subpixel detail are not solved. Edge displacement, topology and visible detail can disagree with pixel error. No commercial paid-tool comparison was run, and paid-tool parity or perfection is not established.
 
 Sources: [Inkvec source/license](https://github.com/logolabs/inkvec), [upstream limitations](https://github.com/logolabs/inkvec/blob/main/docs/LIMITATIONS.md), [VTracer release history](https://github.com/visioncortex/vtracer/blob/master/CHANGELOG.md).
+
+## Hosted verification — October 21
+
+Vercel deployed the gradient-compatible exporter before enabling native refinement. Render's Build Command now installs the checksum-verified CPU CLI; health confirms `refinement_available: true`. Seven sequential production requests returned HTTP200, correct frontend CORS, and no embedded raster images:
+
+| Case | Hosted seconds | Effective route | RGB error /255 |
+|---|---:|---|---:|
+| dragon | 31.93 | inkvec-normalized | 2.5657 |
+| botanical | 19.93 | inkvec-normalized | 0.4145 |
+| city-poster | 29.1 | inkvec-normalized | 1.62 |
+| diagram | 19.01 | opencv | 0.145 |
+| photo | 32.2 | vtracer-rust | 8.4446 |
+| radial | 2.51 | analytic-radial-gradient | 0.4863 |
+| alpha | 3.32 | opencv | 0.0367 |
+
+Hosted botanical compared with its independent vector reference at4x: MAE1.42542→0.27407; reference→output boundary P95 1.25→0.25 source pixels; output→reference P95 1.03078→0.25. Fixed-Canny edge F1 within0.5sourcepixels .66288→.98453. These are fixture-specific geometric measurements, not overall accuracy or competitor scores.
+
+The live Chrome frontend also traced the dragon in31.6seconds, displayed actual radial gradients, and passed100%/400%zoom checks with no console errors. Its downloaded112,728-byte PDF was reopened successfully: one page,16 real radial shadings,no embedded image. SVG/PDF normalized/native golden render checks passed; PDF clipping/multistop/radial tests passed. The latest default Logo & icon preset was separately smoke-tested locally and also selects checked refinement.
+
+The advisory time budget can yield slightly different path counts and outputs across runs/hardware. Source checking runs on each candidate. Free-instance latency is substantially higher than local CPU time; quality gains are not a speed claim. No paid resources or model weights were purchased/downloaded.
