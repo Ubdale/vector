@@ -68,3 +68,5 @@ Hosted botanical compared with its independent vector reference at4x: MAE1.42542
 The live Chrome frontend also traced the dragon in31.6seconds, displayed actual radial gradients, and passed100%/400%zoom checks with no console errors. Its downloaded112,728-byte PDF was reopened successfully: one page,16 real radial shadings,no embedded image. SVG/PDF normalized/native golden render checks passed; PDF clipping/multistop/radial tests passed. The latest default Logo & icon preset was separately smoke-tested locally and also selects checked refinement.
 
 The advisory time budget can yield slightly different path counts and outputs across runs/hardware. Source checking runs on each candidate. Free-instance latency is substantially higher than local CPU time; quality gains are not a speed claim. No paid resources or model weights were purchased/downloaded.
+
+Final default-preset hosted check (backend db1bc97): Logo & icon dragon returned HTTP200, `inkvec-normalized`,150paths,129927SVGbytes,no embedded raster,35.86seconds. Thus eight production conversions passed across the two preset checks. Both repository working trees are clean.
